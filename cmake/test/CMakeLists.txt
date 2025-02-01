@@ -31,19 +31,36 @@ if(TEST_SHARED)
 endif()
 
 if(TEST_STATIC)
-    # FIXME: in the distant future, must become REQUIRED
+    # Ensure that SDL2-static is found, specifically for Dreamcast
     find_package(SDL2 CONFIG COMPONENTS SDL2-static)
-    # FIXME: and the following should be removed
+
+    # If SDL2::SDL2-static is not found, use the Dreamcast-specific module to find SDL2
     if(NOT TARGET SDL2::SDL2-static)
         list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/..")
         include(PrivateSdlFunctions)
         sdl_find_sdl2(SDL2::SDL2-static 2.0)
     endif()
-    # some static vendored libraries use c++ (enable CXX after `find_package` might show a warning)
+
+    # Enable C++ language if static libraries require C++
     enable_language(CXX)
+
+    # Ensure SDL2_mixer is found for Dreamcast
     find_package(SDL2_mixer REQUIRED CONFIG)
-    add_executable(main_static main.c)
-    target_link_libraries(main_static PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
+
+    # Add the SDL2 include directory to CMake paths
+    target_include_directories(main_static PRIVATE ${SDL2_INCLUDE_DIR})
+
+    # Specify the path to the SDL2 static library if needed
+    if(DEFINED SDL2_LIBRARY)
+        target_link_libraries(main_static PRIVATE ${SDL2_LIBRARY})
+    else()
+        target_link_libraries(main_static PRIVATE SDL2::SDL2-static)
+    endif()
+
+    # Link SDL2_mixer static library
+    target_link_libraries(main_static PRIVATE SDL2_mixer::SDL2_mixer-static)
 endif()
+
+
 
 feature_summary(WHAT ALL)

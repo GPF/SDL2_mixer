@@ -79,12 +79,14 @@ static int MODPLUG_Load(void)
         FUNCTION_LOADER(ModPlug_Unload, void (*)(ModPlugFile* file))
         FUNCTION_LOADER(ModPlug_Read, int  (*)(ModPlugFile* file, void* buffer, int size))
         FUNCTION_LOADER(ModPlug_Seek, void (*)(ModPlugFile* file, int millisecond))
-        FUNCTION_LOADER(ModPlug_SeekOrder, void (*)(ModPlugFile* file, int order))
         FUNCTION_LOADER(ModPlug_GetLength, int (*)(ModPlugFile* file))
         FUNCTION_LOADER(ModPlug_GetSettings, void (*)(ModPlug_Settings* settings))
         FUNCTION_LOADER(ModPlug_SetSettings, void (*)(const ModPlug_Settings* settings))
-        FUNCTION_LOADER(ModPlug_SetMasterVolume, void (*)(ModPlugFile* file,unsigned int cvol))
         FUNCTION_LOADER(ModPlug_GetName, const char* (*)(ModPlugFile* file))
+#ifndef __DREAMCAST__        
+        FUNCTION_LOADER(ModPlug_SeekOrder, void (*)(ModPlugFile* file, int order))
+        FUNCTION_LOADER(ModPlug_SetMasterVolume, void (*)(ModPlugFile* file,unsigned int cvol))
+#endif
 #ifdef MODPLUG_DYNAMIC
         modplug.ModPlug_Tell = (int (*)(ModPlugFile* file)) SDL_LoadFunction(modplug.handle, "ModPlug_Tell");
         if (modplug.ModPlug_Tell == NULL) {

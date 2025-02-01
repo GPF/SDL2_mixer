@@ -114,9 +114,11 @@ typedef enum MIX_InitFlags
     MIX_INIT_OGG    = 0x00000010,
     MIX_INIT_MID    = 0x00000020,
     MIX_INIT_OPUS   = 0x00000040,
-    MIX_INIT_WAVPACK= 0x00000080
+    MIX_INIT_WAVPACK= 0x00000080,
+    #if defined(__DREAMCAST__)
+        MIX_INIT_ADX    = 0x00000100,
+    #endif
 } MIX_InitFlags;
-
 /**
  * Initialize SDL_mixer.
  *
@@ -140,6 +142,7 @@ typedef enum MIX_InitFlags
  * - `MIX_INIT_MID`
  * - `MIX_INIT_OPUS`
  * - `MIX_INIT_WAVPACK`
+ * - `MIX_INIT_ADX` (Dreamcast only)
  *
  * More flags may be added in a future SDL_mixer release.
  *
@@ -259,6 +262,9 @@ typedef enum Mix_MusicType {
     MUS_FLAC,
     MUS_MODPLUG_UNUSED,
     MUS_OPUS,
+#if defined(__DREAMCAST__)
+    MUS_ADX,
+#endif    
     MUS_WAVPACK,
     MUS_GME
 } Mix_MusicType;

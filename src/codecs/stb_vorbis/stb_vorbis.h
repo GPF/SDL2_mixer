@@ -650,7 +650,9 @@ enum STBVorbisError
 
 #ifdef STB_VORBIS_SDL
 typedef Uint8 uint8;
+#ifndef __DREAMCAST__
 typedef Sint8 int8;
+#endif
 typedef Uint16 uint16;
 typedef Sint16 int16;
 typedef Uint32 uint32;

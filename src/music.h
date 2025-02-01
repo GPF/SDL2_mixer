@@ -42,6 +42,9 @@ typedef enum
     MIX_MUSIC_LIBXMP,
     MIX_MUSIC_WAVPACK,
     MIX_MUSIC_GME,
+#if defined(__DREAMCAST__)  
+    MIX_MUSIC_ADX,
+#endif
     MIX_MUSIC_LAST
 } Mix_MusicAPI;
 

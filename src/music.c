@@ -42,7 +42,9 @@
 #include "music_wavpack.h"
 #include "music_gme.h"
 #include "native_midi/native_midi.h"
-
+#if defined(__DREAMCAST__)
+#include "music_adx.h"
+#endif
 #include "utils.h"
 
 /* Check to make sure we are building with a new enough SDL */
@@ -204,6 +206,9 @@ static Mix_MusicInterface *s_music_interfaces[] =
 #endif
 #ifdef MUSIC_GME
     &Mix_MusicInterface_GME,
+#endif
+#ifdef MUSIC_ADX
+    &Mix_MusicInterface_ADX,
 #endif
 };
 
@@ -501,6 +506,12 @@ SDL_bool open_music_type(Mix_MusicType type)
         add_music_decoder("FLAC");
         add_chunk_decoder("FLAC");
     }
+#if defined(__DREAMCAST__)
+    if (has_music(MUS_ADX)) {
+        add_music_decoder("ADX");
+        add_chunk_decoder("ADX");
+    }
+#endif
     if (has_music(MUS_WAVPACK)) {
         add_music_decoder("WAVPACK");
         add_chunk_decoder("WAVPACK");
@@ -621,6 +632,10 @@ Mix_MusicType detect_music_type(SDL_RWops *src)
         return MUS_GME;
     }
 
+    #if defined(__DREAMCAST__)
+        return MUS_ADX;
+    #endif
+
     /* Assume MOD format.
      *
      * Apparently there is no way to check if the file is really a MOD,
@@ -637,6 +652,42 @@ Mix_Music *Mix_LoadMUS(const char *file)
     char *ext;
     Mix_MusicType type;
     SDL_RWops *src;
+
+    ext = SDL_strrchr(file, '.');
+
+#ifdef __DREAMCAST__
+    /* For Dreamcast, handle ADX files directly */
+    if (ext && SDL_strcasecmp(ext, "ADX") == 0) {
+        type = MUS_ADX;
+        Mix_MusicInterface *adx_interface = NULL;
+        
+        /* Look for ADX interface */
+        for (i = 0; i < SDL_arraysize(s_music_interfaces); ++i) {
+            if (s_music_interfaces[i]->type == type) {
+                adx_interface = s_music_interfaces[i];
+                break;
+            }
+        }
+
+        if (adx_interface && adx_interface->opened && adx_interface->CreateFromFile) {
+            context = adx_interface->CreateFromFile(file);
+            if (context) {
+                Mix_Music *music = (Mix_Music *)SDL_calloc(1, sizeof(Mix_Music));
+                if (music == NULL) {
+                    Mix_OutOfMemory();
+                    return NULL;
+                }
+                music->interface = adx_interface;
+                music->context = context;
+                SDL_strlcpy(music->filename, file, 1024);
+                return music;
+            }
+        }
+        /* If ADX loading failed or interface isn't ready, set error and return */
+        Mix_SetError("Failed to load ADX file: Interface not available or not initialized.");
+        return NULL;
+    }
+#endif
 
     for (i = 0; i < SDL_arraysize(s_music_interfaces); ++i) {
         Mix_MusicInterface *interface = s_music_interfaces[i];
@@ -669,7 +720,6 @@ Mix_Music *Mix_LoadMUS(const char *file)
 
     /* Use the extension as a first guess on the file type */
     type = MUS_NONE;
-    ext = SDL_strrchr(file, '.');
     if (ext) {
         ++ext; /* skip the dot in the extension */
         if (SDL_strcasecmp(ext, "WAV") == 0) {
@@ -686,10 +736,10 @@ Mix_Music *Mix_LoadMUS(const char *file)
             type = MUS_FLAC;
         } else if (SDL_strcasecmp(ext, "WV") == 0) {
             type = MUS_WAVPACK;
-        } else  if (SDL_strcasecmp(ext, "MPG") == 0 ||
-                     SDL_strcasecmp(ext, "MPEG") == 0 ||
-                     SDL_strcasecmp(ext, "MP3") == 0 ||
-                     SDL_strcasecmp(ext, "MAD") == 0) {
+        } else if (SDL_strcasecmp(ext, "MPG") == 0 ||
+                    SDL_strcasecmp(ext, "MPEG") == 0 ||
+                    SDL_strcasecmp(ext, "MP3") == 0 ||
+                    SDL_strcasecmp(ext, "MAD") == 0) {
             type = MUS_MP3;
         } else if (SDL_strcasecmp(ext, "669") == 0 ||
                     SDL_strcasecmp(ext, "AMF") == 0 ||

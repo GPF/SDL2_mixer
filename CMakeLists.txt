@@ -99,6 +99,17 @@ if(UNIX AND NOT APPLE)
 else()
     set(sdl2mixer_cmd_default OFF)
 endif()
+
+if(__DREAMCAST__)
+    set(sdl2mixer_cmd_default OFF)
+    set(SDL2MIXER_SAMPLES ON)
+    set(ADX_LIBRARY adx)  # Assuming libadx.a is named libadx.a
+    add_definitions(-DMODPLUG_HEADER="${MODPLUG_HEADER}")
+    add_definitions(-DOPUSFILE_HEADER="${OPUSFILE_HEADER}")
+    include_directories(${OPUS_INCLUDE_DIR})
+    set(SDL2MIXER_MOD_MODPLUG_SHARED OFF)
+endif()
+
 option(SDL2MIXER_CMD "Support an external music player" ${sdl2mixer_cmd_default})
 
 option(SDL2MIXER_FLAC "Enable FLAC music" ON)
@@ -240,6 +251,13 @@ add_library(SDL2_mixer
     src/music.c
     src/utils.c
 )
+
+# Check if this is for Dreamcast
+if(__DREAMCAST__)
+    target_compile_definitions(SDL2_mixer PRIVATE MUSIC_ADX)
+    target_sources(SDL2_mixer PRIVATE src/codecs/music_adx.c)
+endif()
+
 add_library(SDL2_mixer::${sdl2_mixer_export_name} ALIAS SDL2_mixer)
 target_include_directories(SDL2_mixer
     PUBLIC
@@ -997,15 +1015,45 @@ if(SDL2MIXER_INSTALL)
 endif()
 
 if(SDL2MIXER_SAMPLES)
-    check_include_file("signal.h" HAVE_SIGNAL_H)
-    check_symbol_exists("setbuf" "stdio.h" HAVE_SETBUF)
+    if(NOT __DREAMCAST__)
+        add_executable(playmus playmus.c)
+        add_executable(playwave playwave.c)
+    else()
+        add_executable(playadx playadx.c)
+    endif()
 
-    add_executable(playmus playmus.c)
-    add_executable(playwave playwave.c)
+    if(__DREAMCAST__)
+        set(PLAYADX_RESOURCE_FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/gs-16b-2c-44100hz.adx"
+            # Add more ADX files if needed
+        )
+        if(PLAYADX_RESOURCE_FILES)
+            # Set up romdisk directory for the app
+            set(KOS_ROMDISK_DIR "${CMAKE_CURRENT_BINARY_DIR}/romdisk_playadx")
+            
+            # Ensure resources directory exists
+            file(MAKE_DIRECTORY "${KOS_ROMDISK_DIR}")
 
-    find_package(SDL2main)
+            # Copy resource files to the romdisk directory
+            foreach(RESOURCE_FILE ${PLAYADX_RESOURCE_FILES})
+                file(COPY ${RESOURCE_FILE} DESTINATION "${KOS_ROMDISK_DIR}")
+            endforeach()
 
-    foreach(prog playmus playwave)
+            # Use kos_add_romdisk function from KOS Dreamcast CMake utilities
+            kos_add_romdisk(playadx "${KOS_ROMDISK_DIR}" playadx)
+        else()
+            message(WARNING "playadx does not have resource files defined!")
+        endif()
+    endif()
+
+    set(SAMPLE_PROGRAMS)
+    if(NOT __DREAMCAST__)
+        list(APPEND SAMPLE_PROGRAMS playmus playwave)
+    else()
+        list(APPEND SAMPLE_PROGRAMS playadx)
+    endif()
+
+    foreach(prog ${SAMPLE_PROGRAMS})
         # FIXME: mingw should be handled by SDL2::SDL2(-static) target
         if(MINGW)
             target_link_libraries(${prog} PRIVATE mingw32)
@@ -1021,6 +1069,10 @@ if(SDL2MIXER_SAMPLES)
         endif()
         if(HAVE_SETBUF)
             target_compile_definitions(${prog} PRIVATE HAVE_SETBUF)
+        endif()
+
+        if(__DREAMCAST__)
+            target_link_libraries(${prog} PRIVATE libSDL2_mixer.a /opt/toolchains/dc/kos/addons/lib/dreamcast/libSDL2main.a /opt/toolchains/dc/kos/addons/lib/dreamcast/libSDL2.a -lm -lGL)
         endif()
 
         if(SDL2MIXER_SAMPLES_INSTALL)

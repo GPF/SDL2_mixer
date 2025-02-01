@@ -203,6 +203,11 @@ static int get_loaded_mix_init_flags(void)
             case MUS_OPUS:
                 loaded_init_flags |= MIX_INIT_OPUS;
                 break;
+#if defined(__DREAMCAST__)
+            case MUS_ADX: 
+                loaded_init_flags |= MIX_INIT_ADX;
+                break;                
+#endif
             default:
                 break;
             }
@@ -273,6 +278,17 @@ int Mix_Init(int flags)
             Mix_SetError("MIDI support not available");
         }
     }
+#ifdef __DREAMCAST__    
+    // Add handling for ADX here
+    if (flags & MIX_INIT_ADX) {
+        if (load_music_type(MUS_ADX)) {
+            open_music_type(MUS_ADX);
+            result |= MIX_INIT_ADX;
+        } else {
+            Mix_SetError("ADX support not available");
+        }
+    }    
+#endif    
     result |= already_loaded;
 
     return result;
