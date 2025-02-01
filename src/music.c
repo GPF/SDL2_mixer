@@ -771,6 +771,11 @@ Mix_Music *Mix_LoadMUS(const char *file)
                     SDL_strcasecmp(ext, "VGM") == 0) {
             type = MUS_GME;
         }
+#ifdef __DREAMCAST__
+        else if (SDL_strcasecmp(ext, "ADX") == 0) {
+            type = MUS_ADX;
+        }
+#endif                
     }
     return Mix_LoadMUSType_RW(src, type, SDL_TRUE);
 }
