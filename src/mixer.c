@@ -546,6 +546,12 @@ int Mix_OpenAudioDevice(int frequency, Uint16 format, int nchannels, int chunksi
     add_chunk_decoder("AIFF");
     add_chunk_decoder("VOC");
 
+#if defined(__DREAMCAST__)
+    /* Register ADX chunk decoder */
+    add_chunk_decoder("ADX");
+    // Mix_RegisterChunkDecoder("ADX", Mix_LoadADX_RW); // Register the ADX chunk decoder
+#endif
+
     /* Initialize the music players */
     open_music(&mixer);
 

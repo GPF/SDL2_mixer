@@ -233,6 +233,7 @@ static int ADX_GetAudio(void *context, void *data, int bytes);
 static void ADX_SetVolume(void *context, int volume);
 static void ADX_Pause(void *context);
 static void ADX_Resume(void *context);
+static void* ADX_LoadFromFile(const char* file);
 
 /* ADX Music Interface */
 Mix_MusicInterface Mix_MusicInterface_ADX = {
@@ -245,7 +246,7 @@ Mix_MusicInterface Mix_MusicInterface_ADX = {
     NULL,  // Load - not used for ADX
     NULL,  // Open - not used for ADX
     ADX_CreateFromRW,
-    NULL,  // CreateFromFile - not implemented for ADX
+    ADX_LoadFromFile,  // CreateFromFile - implemented for ADX
     ADX_SetVolume,
     NULL,  // GetVolume - not implemented
     ADX_Play,
@@ -268,6 +269,96 @@ Mix_MusicInterface Mix_MusicInterface_ADX = {
     NULL,  // Close - not implemented
     NULL   // Unload - not implemented
 };
+
+static void* ADX_LoadFromFile(const char* file) {
+    SDL_RWops* rw = SDL_RWFromFile(file, "rb");
+    if (!rw) {
+        SDL_SetError("ADX: Could not open file for reading");
+        return NULL;
+    }
+
+    // Read ADX header to get file information
+    unsigned char adx_header[ADX_HDR_SIZE];
+    if (SDL_RWread(rw, adx_header, 1, ADX_HDR_SIZE) != ADX_HDR_SIZE) {
+        SDL_SetError("ADX: Could not read header");
+        SDL_RWclose(rw);
+        return NULL;
+    }
+
+    // Here we assume you have an ADX_INFO structure to hold metadata like channels, sample rate, etc.
+    ADX_INFO adx_info;
+    // Parse adx_header to fill adx_info. This would involve reading specific bytes to understand the format.
+
+    // Allocate buffer for PCM data. Size based on some estimate or fixed size for simplicity.
+    Uint8* pcm_data = (Uint8*)SDL_malloc(PCM_BUF_SIZE);
+    if (!pcm_data) {
+        SDL_SetError("ADX: Failed to allocate PCM buffer");
+        SDL_RWclose(rw);
+        return NULL;
+    }
+
+    int pcm_size = 0;
+    int pcm_samples = adx_info.samples; // Total samples in the ADX file
+    unsigned char adx_buf[adx_info.chunk_size * adx_info.channels]; // Buffer for one ADX chunk
+
+    PREV prev[2] = { {0, 0}, {0, 0} }; // Previous samples for ADPCM decoding
+
+    // Decode ADX to PCM
+    while (pcm_samples > 0 && pcm_size < PCM_BUF_SIZE) {
+        int wsize = (pcm_samples > 32) ? 32 : pcm_samples; // Decode in chunks of 32 or less
+
+        if (SDL_RWread(rw, adx_buf, 1, adx_info.chunk_size * adx_info.channels) != adx_info.chunk_size * adx_info.channels) {
+            SDL_SetError("ADX: Failed to read ADX data");
+            SDL_RWclose(rw);
+            SDL_free(pcm_data);
+            return NULL;
+        }
+
+        if (adx_info.channels == 1) {
+            // Mono
+            short outbuf[wsize * 2];
+            adx_to_pcm(outbuf, adx_buf, &prev[0]);
+            memcpy(pcm_data + pcm_size, outbuf, wsize * 2);
+            pcm_size += wsize * 2;
+        } else if (adx_info.channels == 2) {
+            // Stereo
+            short tmpbuf[wsize * 2], outbuf[wsize * 2];
+            adx_to_pcm(tmpbuf, adx_buf, &prev[0]);
+            adx_to_pcm(tmpbuf + wsize, adx_buf + adx_info.chunk_size, &prev[1]);
+            for (int i = 0; i < wsize; i++) {
+                outbuf[i * 2] = tmpbuf[i];
+                outbuf[i * 2 + 1] = tmpbuf[i + wsize];
+            }
+            memcpy(pcm_data + pcm_size, outbuf, wsize * 4); // 2 channels
+            pcm_size += wsize * 4;
+        }
+
+        pcm_samples -= wsize;
+    }
+
+    SDL_RWclose(rw); // Close the file since we're done reading
+
+    if (pcm_size == 0) {
+        SDL_SetError("ADX: No PCM data decoded");
+        SDL_free(pcm_data);
+        return NULL;
+    }
+
+    // Create Mix_Chunk from PCM data
+    Mix_Chunk* chunk = (Mix_Chunk*)SDL_malloc(sizeof(Mix_Chunk));
+    if (!chunk) {
+        SDL_SetError("ADX: Failed to allocate memory for Mix_Chunk");
+        SDL_free(pcm_data);
+        return NULL;
+    }
+
+    chunk->allocated = 1;
+    chunk->abuf = pcm_data;
+    chunk->alen = pcm_size;
+    chunk->volume = MIX_MAX_VOLUME;
+
+    return chunk;
+}
 
 static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
 {
@@ -468,10 +559,19 @@ static double ADX_Duration(void *context)
 
 static void ADX_SetVolume(void *context, int volume)
 {
-    // Placeholder for volume control
-    (void)context;
-    (void)volume;
-    // Implement volume control if available
+    // Get the audio device spec
+    SDL_AudioSpec spec;
+    if (SDL_GetAudioDeviceSpec(0, 0, &spec) == 0 && spec.userdata) {
+        // Retrieve the KOS sound stream handle from userdata
+        snd_stream_hnd_t handle = (snd_stream_hnd_t)(intptr_t)spec.userdata;
+        
+        // Scale SDL volume (0-128) to KOS volume range (0-255)
+        int kos_volume = (volume * 2);  
+        if (kos_volume > 255) kos_volume = 255;
+
+        // Set the volume using the KOS API
+        snd_stream_volume(handle, kos_volume);
+    }
 }
 
 static void ADX_Pause(void *context)
