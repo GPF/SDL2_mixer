@@ -71,27 +71,20 @@ export KOS_PORTS_DIR="${KOS_BASE}/../kos-ports"
 export KOS_LIB_PATH="${KOS_PORTS_DIR}/lib"
 export KOS_INCLUDE_PATH="${KOS_PORTS_DIR}/include"
 
-# Enable MOD support with libmodplug
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD=ON"
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_MODPLUG=ON"
-
-# Link libmodplug.a for MOD support
-export CMAKE_OPTS="$CMAKE_OPTS -Dmodplug_LIBRARY=${KOS_LIB_PATH}/libmodplug.a"
-
-# Set modplug include path for MOD support
-export CMAKE_OPTS="$CMAKE_OPTS -Dmodplug_INCLUDE_PATH=${KOS_INCLUDE_PATH}/modplug"
+# --- Disable MOD support with libmodplug ---
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD=OFF"
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_MODPLUG=OFF"
+# (Removed the modplug_LIBRARY and modplug_INCLUDE_PATH options since they are not needed)
 
 # Disable FluidSynth support if you don't need it
 export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MIDI_FLUIDSYNTH=OFF"
 
 # Disable libxmp dependencies as no compatible libraries were found
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP=OFF"  # Disable libxmp
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP_LITE=OFF"  # Disable libxmp-lite
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP_SHARED=OFF"  # Disable dynamic libxmp loading
-export CMAKE_OPTS="$CMAKE_OPTS -DMODPLUG_HEADER=${KOS_INCLUDE_PATH}/modplug/modplug.h" 
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP=OFF"        # Disable libxmp
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP_LITE=OFF"   # Disable libxmp-lite
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_MOD_XMP_SHARED=OFF"   # Disable dynamic libxmp loading
 export CMAKE_OPTS="$CMAKE_OPTS -DOPUSFILE_HEADER=${KOS_INCLUDE_PATH}/opusfile/opusfile.h" 
 export CMAKE_OPTS="$CMAKE_OPTS -DOPUS_INCLUDE_DIR=/opt/toolchains/dc/kos/../kos-ports/include/opus"
-
 
 # Disable wavpack support due to missing KOS wavpack library
 export CMAKE_OPTS="$CMAKE_OPTS -DSDL2MIXER_WAVPACK=OFF"
