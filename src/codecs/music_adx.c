@@ -170,13 +170,13 @@ static int adx_parse(ADX_Music *adx_music, unsigned char *buf)
     }
 
     // Debug output for audio information
-    printf("ADX Header Information:\n");
-    printf("  Sample Offset: %d\n", adx_music->adx_info.sample_offset);
-    printf("  Chunk Size: %d\n", adx_music->adx_info.chunk_size);
-    printf("  Channels: %d\n", adx_music->adx_info.channels);
-    printf("  Sample Rate: %d Hz\n", adx_music->adx_info.rate);
-    printf("  Total Samples: %d\n", adx_music->adx_info.samples);
-    printf("  Loop Type: %d\n", adx_music->adx_info.loop_type);
+    // printf("ADX Header Information:\n");
+    // printf("  Sample Offset: %d\n", adx_music->adx_info.sample_offset);
+    // printf("  Chunk Size: %d\n", adx_music->adx_info.chunk_size);
+    // printf("  Channels: %d\n", adx_music->adx_info.channels);
+    // printf("  Sample Rate: %d Hz\n", adx_music->adx_info.rate);
+    // printf("  Total Samples: %d\n", adx_music->adx_info.samples);
+    // printf("  Loop Type: %d\n", adx_music->adx_info.loop_type);
     if (adx_music->adx_info.loop) {
         printf("  Loop Start Sample: %d\n", adx_music->adx_info.loop_samp_start);
         printf("  Loop End Sample: %d\n", adx_music->adx_info.loop_samp_end);
@@ -377,7 +377,7 @@ static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
     adx_music->pcm_size = 0;
     unsigned char header[ADX_HDR_SIZE];
 
-    SDL_Log("ADX_CreateFromRW called");
+    // SDL_Log("ADX_CreateFromRW called");
     if (adx_parse(adx_music, header) < 1) {
         Mix_SetError("Failed to parse ADX file");
         goto cleanup;
@@ -390,8 +390,8 @@ static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
     int freq, channels;
     Uint16 format;
     Mix_QuerySpec(&freq, &format, &channels);
-    printf("SDL_mixer expects: %d Hz, %d channels\n", freq, channels);
-    printf("ADX file reports: %d Hz, %d channels\n", adx_music->sample_rate, adx_music->channels);
+    // printf("SDL_mixer expects: %d Hz, %d channels\n", freq, channels);
+    // printf("ADX file reports: %d Hz, %d channels\n", adx_music->sample_rate, adx_music->channels);
 
     // Reset file position to start of ADX data
     SDL_RWseek(src, adx_music->adx_info.sample_offset + ADX_CRI_SIZE, RW_SEEK_SET);
@@ -468,16 +468,16 @@ static int ADX_GetAudio(void *context, void *data, int bytes)
                     if (adx_music->adx_info.loop) {
                         SDL_RWseek(adx_music->src, adx_music->adx_info.loop_start, RW_SEEK_SET);
                         adx_music->pcm_samples = adx_music->adx_info.loop_samples;
-                        SDL_Log("ADX_GetAudio: Loop back to start at %d", adx_music->adx_info.loop_start);
+                        // SDL_Log("ADX_GetAudio: Loop back to start at %d", adx_music->adx_info.loop_start);
                     } else {
                         SDL_RWseek(adx_music->src, adx_music->adx_info.sample_offset + ADX_CRI_SIZE, RW_SEEK_SET);
                         adx_music->pcm_samples = adx_music->adx_info.samples;
-                        SDL_Log("ADX_GetAudio: Loop back to sample offset");
+                        // SDL_Log("ADX_GetAudio: Loop back to sample offset");
                     }
                 } else {
                     adx_music->playing = SDL_FALSE;
                     SDL_memset((Uint8*)data + bytes_filled, 0, bytes - bytes_filled);
-                    SDL_Log("ADX_GetAudio: Chunk processed, continuing playback");
+                    // SDL_Log("ADX_GetAudio: Chunk processed, continuing playback");
                     return bytes_filled;
                 }
             } else {
@@ -590,7 +590,7 @@ static void ADX_Pause(void *context)
 {
     ADX_Music *adx_music = (ADX_Music *)context;
     adx_music->paused = SDL_TRUE;
-    SDL_Log("Paused ADX playback");
+    // SDL_Log("Paused ADX playback");
 }
 
 static void ADX_Resume(void *context)
