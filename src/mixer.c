@@ -60,7 +60,11 @@ SDL_COMPILE_TIME_ASSERT(SDL_MIXER_PATCHLEVEL_max, SDL_MIXER_PATCHLEVEL <= 99);
 #endif
 
 static int audio_opened = 0;
+#if defined(__DREAMCAST__)
+SDL_AudioSpec mixer;
+#else
 static SDL_AudioSpec mixer;
+#endif
 static SDL_AudioDeviceID audio_device;
 
 typedef struct _Mix_effectinfo
@@ -477,7 +481,7 @@ static void PrintFormat(char *title, SDL_AudioSpec *fmt)
             (fmt->channels > 1) ? "stereo" : "mono", fmt->freq);
 }
 #endif
-
+#include <kos.h>
 /* Open the mixer with a certain desired audio format */
 int Mix_OpenAudioDevice(int frequency, Uint16 format, int nchannels, int chunksize,
                         const char* device, int allowed_changes)
@@ -511,12 +515,18 @@ int Mix_OpenAudioDevice(int frequency, Uint16 format, int nchannels, int chunksi
     desired.channels = nchannels;
     desired.samples = chunksize;
     desired.callback = mix_channels;
-    desired.userdata = NULL;
+    // desired.userdata = NULL;
 
     /* Accept nearly any audio format */
     if ((audio_device = SDL_OpenAudioDevice(device, 0, &desired, &mixer, allowed_changes)) == 0) {
         return -1;
     }
+    // Make sure userdata is set here
+    // SDL_Log("mixer userdata after opening device: %d", (snd_stream_hnd_t*)mixer.userdata);
+    // SDL_Log("snd_stream_get_userdata(0) = %s",snd_stream_get_userdata(0));
+
+
+
 #if 0
     PrintFormat("Audio device", &mixer);
 #endif

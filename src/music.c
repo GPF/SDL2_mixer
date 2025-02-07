@@ -655,9 +655,11 @@ Mix_Music *Mix_LoadMUS(const char *file)
 
     ext = SDL_strrchr(file, '.');
 
-#ifdef __DREAMCAST__
+#ifndef __DREAMCAST__
+    ++ext; 
+    // SDL_Log("ext: %s\n", ext);
     /* For Dreamcast, handle ADX files directly */
-    if (ext && SDL_strcasecmp(ext, "ADX") == 0) {
+    if (ext && SDL_strcasecmp(ext, "ADX") != 0) {
         type = MUS_ADX;
         Mix_MusicInterface *adx_interface = NULL;
         
@@ -1231,11 +1233,16 @@ static void music_internal_volume(int volume)
         music_playing->interface->SetVolume(music_playing->context, volume);
     }
 }
+
+#if defined(__DREAMCAST__)
+#include <kos.h>
+extern SDL_AudioSpec mixer;
+#endif
+
 int Mix_VolumeMusic(int volume)
 {
-    int prev_volume;
+    int prev_volume = music_volume;
 
-    prev_volume = music_volume;
     if (volume < 0) {
         return prev_volume;
     }
@@ -1243,13 +1250,27 @@ int Mix_VolumeMusic(int volume)
         volume = SDL_MIX_MAXVOLUME;
     }
     music_volume = volume;
+
+#if !defined(__DREAMCAST__)
     Mix_LockAudio();
     if (music_playing) {
         music_internal_volume(music_volume);
     }
     Mix_UnlockAudio();
+#else
+    // Access the stream handle from userdata
+    // SDL_Log("miser has userdata %p", mixer.userdata);
+    if (mixer.userdata) {
+        snd_stream_hnd_t stream_handle = (snd_stream_hnd_t)(intptr_t)SDL_AtomicGet(mixer.userdata);
+        SDL_Log("Setting Dreamcast stream volume to %d", volume);
+        int kos_volume = 0;  // Convert SDL volume (0-128) to KOS (0-255)
+        snd_stream_volume(stream_handle, kos_volume);
+    }
+#endif
+
     return prev_volume;
 }
+
 
 int Mix_GetMusicVolume(Mix_Music *music)
 {
