@@ -1251,22 +1251,22 @@ int Mix_VolumeMusic(int volume)
     }
     music_volume = volume;
 
-#if !defined(__DREAMCAST__)
+// #if !defined(__DREAMCAST__)
     Mix_LockAudio();
     if (music_playing) {
         music_internal_volume(music_volume);
     }
     Mix_UnlockAudio();
-#else
+// #else
     // Access the stream handle from userdata
     // SDL_Log("miser has userdata %p", mixer.userdata);
-    if (mixer.userdata) {
-        snd_stream_hnd_t stream_handle = (snd_stream_hnd_t)(intptr_t)SDL_AtomicGet(mixer.userdata);
-        SDL_Log("Setting Dreamcast stream volume to %d", volume);
-        int kos_volume = 0;  // Convert SDL volume (0-128) to KOS (0-255)
-        snd_stream_volume(stream_handle, kos_volume);
-    }
-#endif
+//     if (mixer.userdata) {
+//         snd_stream_hnd_t stream_handle = (snd_stream_hnd_t)(intptr_t)SDL_AtomicGet(mixer.userdata);
+//         SDL_Log("Setting Dreamcast stream volume to %d", volume);
+//         int kos_volume = (volume*255)/128;  // Convert SDL volume (0-128) to KOS (0-255)
+//         snd_stream_volume(stream_handle, kos_volume);
+//     }
+// #endif
 
     return prev_volume;
 }
