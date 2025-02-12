@@ -27,6 +27,10 @@
 #include "load_aiff.h"
 #include "load_voc.h"
 
+#ifdef __DREAMCAST__
+#include "music_adx.h"
+#endif
+
 #define MIX_INTERNAL_EFFECT__
 #include "effects_internal.h"
 
@@ -60,11 +64,7 @@ SDL_COMPILE_TIME_ASSERT(SDL_MIXER_PATCHLEVEL_max, SDL_MIXER_PATCHLEVEL <= 99);
 #endif
 
 static int audio_opened = 0;
-#if defined(__DREAMCAST__)
-SDL_AudioSpec mixer;
-#else
 static SDL_AudioSpec mixer;
-#endif
 static SDL_AudioDeviceID audio_device;
 
 typedef struct _Mix_effectinfo
@@ -481,7 +481,7 @@ static void PrintFormat(char *title, SDL_AudioSpec *fmt)
             (fmt->channels > 1) ? "stereo" : "mono", fmt->freq);
 }
 #endif
-#include <kos.h>
+
 /* Open the mixer with a certain desired audio format */
 int Mix_OpenAudioDevice(int frequency, Uint16 format, int nchannels, int chunksize,
                         const char* device, int allowed_changes)
@@ -559,7 +559,6 @@ int Mix_OpenAudioDevice(int frequency, Uint16 format, int nchannels, int chunksi
 #if defined(__DREAMCAST__)
     /* Register ADX chunk decoder */
     add_chunk_decoder("ADX");
-    // Mix_RegisterChunkDecoder("ADX", Mix_LoadADX_RW); // Register the ADX chunk decoder
 #endif
 
     /* Initialize the music players */
@@ -856,6 +855,56 @@ Mix_Chunk *Mix_LoadWAV_RW(SDL_RWops *src, int freesrc)
         Mix_SetError("Couldn't read first 4 bytes of audio data");
         return NULL;
     }
+    
+
+// #ifdef __DREAMCAST__
+//     /* Read the initial part of the ADX file header (at least 38 bytes) */
+//     if (SDL_RWread(src, magic, 1, 38) != 38) {
+//         SDL_free(chunk);
+//         if (freesrc) {
+//             SDL_RWclose(src);
+//         }
+//         Mix_SetError("Couldn't read ADX header data");
+//         return NULL;
+//     }
+
+//     /* Log the magic bytes for debugging */
+//     // SDL_Log("ADX file detected, loading using custom handler. Magic bytes:");
+//     // for (int i = 0; i < 38; i++) {
+//     //     SDL_Log("0x%02X ", magic[i]);
+//     // }
+//     // SDL_Log("\n");
+
+//     /* Seek backward for compatibility with other loaders */
+//     SDL_RWseek(src, -38, RW_SEEK_CUR);
+
+//     SDL_Log("Checking for ADX signature at offset 26: %c%c%c%c%c%c",
+//         magic[26], magic[27], magic[28], magic[29], magic[30], magic[31]);
+//     /* Check for the presence of the (c)CRI signature */
+//     if (SDL_memcmp(magic + 26, "\x28\x63\x29\x43\x52\x49", 6) == 0) {
+//         SDL_Log("ADX signature detected, proceeding with ADX loading.");
+
+//     Mix_Chunk *adx_chunk = ADX_CreateFromRW(src, freesrc);
+//     if (!adx_chunk) {
+//         SDL_free(chunk);
+//         if (freesrc) {
+//             SDL_RWclose(src);
+//         }
+//         return NULL;
+//     }
+
+//     /* Copy the data from adx_chunk to chunk */
+//     chunk->abuf = adx_chunk->abuf;
+//     chunk->alen = adx_chunk->alen;
+//     chunk->allocated = adx_chunk->allocated;
+//     chunk->volume = adx_chunk->volume;
+
+//     SDL_free(adx_chunk);  // Free the temporary structure, not its contents
+
+//     return chunk;
+// }
+// #endif
+
     /* Seek backwards for compatibility with older loaders */
     SDL_RWseek(src, -4, RW_SEEK_CUR);
 

@@ -52,7 +52,7 @@
 #include "SDL.h"
 #include "SDL_mixer.h"
 #include "music.h"
-
+#include "music_adx.h"
 #include <kos.h>
 
 #define ADX_CRI_SIZE 0x06
@@ -221,21 +221,6 @@ static void adx_to_pcm(short *out, unsigned char *in, PREV *prev)
     prev->s2 = s2;
 }
 
-/* Function prototypes */
-static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc);
-static void ADX_Delete(void *context);
-static int ADX_Play(void *context, int play_count);
-static int ADX_Seek(void *context, double position);
-static double ADX_Tell(void *context);
-static double ADX_Duration(void *context);
-static void ADX_Stop(void *context);
-static SDL_bool ADX_IsPlaying(void *context);
-static int ADX_GetAudio(void *context, void *data, int bytes);
-static void ADX_SetVolume(void *context, int volume);
-static void ADX_Pause(void *context);
-static void ADX_Resume(void *context);
-// static Mix_Chunk* ADX_LoadFromFile(const char* file);
-
 /* ADX Music Interface */
 Mix_MusicInterface Mix_MusicInterface_ADX = {
     "ADX",
@@ -362,19 +347,23 @@ Mix_MusicInterface Mix_MusicInterface_ADX = {
 //     return chunk;
 // }
 
-static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
+void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
 {
     ADX_Music *adx_music = (ADX_Music *)SDL_calloc(1, sizeof(*adx_music));
     if (!adx_music) {
         Mix_OutOfMemory();
         return NULL;
     }
+
+    // Initialize the ADX music structure
     adx_music->src = src;
     adx_music->freesrc = freesrc;
     adx_music->playing = SDL_FALSE;
     adx_music->paused = SDL_FALSE;
     adx_music->loop = 0;
-    adx_music->pcm_size = 0;
+    // adx_music->adx_size = 0; // Initialize the raw ADX buffer size to 0
+
+    // Parse the ADX header
     unsigned char header[ADX_HDR_SIZE];
 
     // SDL_Log("ADX_CreateFromRW called");
@@ -396,9 +385,9 @@ static void *ADX_CreateFromRW(SDL_RWops *src, int freesrc)
     // Reset file position to start of ADX data
     SDL_RWseek(src, adx_music->adx_info.sample_offset + ADX_CRI_SIZE, RW_SEEK_SET);
 
-    // // Debugging output to confirm the extracted values
-    // printf("ADX Loaded: Sample Rate = %d Hz, Channels = %d\n", 
-    //     adx_music->sample_rate, adx_music->channels);
+    // Debug logging
+    // SDL_Log("ADX_CreateFromRW: Sample Rate = %d, Channels = %d, Loop = %d",
+    //         adx_music->sample_rate, adx_music->channels, adx_music->adx_info.loop);
 
     return adx_music;
 
@@ -416,6 +405,9 @@ static void ADX_Delete(void *context)
         SDL_RWclose(adx_music->src);
     }
     SDL_free(adx_music);
+
+    // Debug logging
+    // SDL_Log("ADX_Delete: Cleaned up ADX music");
 }
 
 static int ADX_Play(void *context, int play_count)

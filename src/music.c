@@ -1233,12 +1233,6 @@ static void music_internal_volume(int volume)
         music_playing->interface->SetVolume(music_playing->context, volume);
     }
 }
-
-#if defined(__DREAMCAST__)
-#include <kos.h>
-extern SDL_AudioSpec mixer;
-#endif
-
 int Mix_VolumeMusic(int volume)
 {
     int prev_volume = music_volume;
