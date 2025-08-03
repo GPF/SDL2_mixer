@@ -51,7 +51,7 @@ cd "$BUILD_DIR"
 export SDL2_DIR="/opt/toolchains/dc/kos/addons/lib/dreamcast/cmake/SDL2"
 
 # Set SDL2 and KOS paths for SDL2_mixer build
-export CMAKE_OPTS="$CMAKE_OPTS -DSDL2_INCLUDE_DIR=${SDL2_DIR}/SDL2 -DSDL2_LIBRARY=${SDL2_DIR}/lib/dreamcast/libSDL2.a"
+export CMAKE_OPTS="$CMAKE_OPTS -DSDL2_INCLUDE_DIR=${SDL2_DIR}/dreamcast/SDL2 -DSDL2_LIBRARY=${SDL2_DIR}/lib/dreamcast/libSDL2.a"
 
 # Set SDL2 main library path
 export CMAKE_OPTS="$CMAKE_OPTS -DSDL2_MAIN_LIBRARY=${SDL2_DIR}/lib/dreamcast/libSDL2main.a"
@@ -97,7 +97,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE="$KOS_CMAKE_TOOLCHAIN" \
       $CMAKE_OPTS \
       -DCMAKE_INSTALL_PREFIX=${KOS_BASE}/addons \
       -DCMAKE_INSTALL_LIBDIR=lib/dreamcast \
-      -DCMAKE_INSTALL_INCLUDEDIR=include/ \
+      -DCMAKE_INSTALL_INCLUDEDIR=include/dreamcast \
       -DOpusFile_INCLUDE_PATH=${KOS_INCLUDE_PATH}/opusfile \
       -DOpusFile_LIBRARY=${KOS_LIB_PATH}/libopusfile.a \
       "$SOURCE_DIR"
